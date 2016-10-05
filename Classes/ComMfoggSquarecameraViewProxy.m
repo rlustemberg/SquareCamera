@@ -24,5 +24,6 @@ USE_VIEW_FOR_UI_METHOD(turnFlashOn);
 USE_VIEW_FOR_UI_METHOD(turnFlashOff);
 USE_VIEW_FOR_UI_METHOD(pause);
 USE_VIEW_FOR_UI_METHOD(resume);
+USE_VIEW_FOR_UI_METHOD(resetZoomFactor);
 
 @end

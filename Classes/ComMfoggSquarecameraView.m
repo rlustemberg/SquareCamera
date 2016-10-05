@@ -70,7 +70,7 @@ static const NSString *AVCaptureStillImageIsCapturingStillImageContext = @"AVCap
 {
     // This is initializing the square view
     [TiUtils setView:self.square positionRect:bounds];
-
+    
     if(self.captureSession){
         if(![self.captureSession isRunning]){
             [self.captureSession startRunning];
@@ -113,6 +113,14 @@ static const NSString *AVCaptureStillImageIsCapturingStillImageContext = @"AVCap
   };
 };
 
+- (void)resetZoomFactor:(id)args {
+    self.captureDevice.videoZoomFactor = 1.0;
+    if([self.captureDevice lockForConfiguration:true]){
+        
+    };
+};
+
+
 // utility routine to display error alert if takePicture fails
 - (void)displayErrorOnMainQueue:(NSError *)error withMessage:(NSString *)message
 {
@@ -131,6 +139,8 @@ static const NSString *AVCaptureStillImageIsCapturingStillImageContext = @"AVCap
 {
 
   AVCaptureConnection *stillImageConnection = nil;
+    //self.prevLayer
+  
 
   for (AVCaptureConnection *connection in self.stillImageOutput.connections)
   {
@@ -145,8 +155,7 @@ static const NSString *AVCaptureStillImageIsCapturingStillImageContext = @"AVCap
     if (stillImageConnection) { break; }
   }
 
-  UIDeviceOrientation curDeviceOrientation = [[UIDevice currentDevice] orientation];
-
+  
   [self.stillImageOutput captureStillImageAsynchronouslyFromConnection:stillImageConnection completionHandler: ^(CMSampleBufferRef imageSampleBuffer, NSError *error)
   {
 
@@ -195,13 +204,17 @@ static const NSString *AVCaptureStillImageIsCapturingStillImageContext = @"AVCap
 
     UIImage *croppedImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
-
+      
+    //handling UIImage orientation
+    UIDeviceOrientation curDeviceOrientation = [[UIDevice currentDevice] orientation];
+    if (UIDeviceOrientationIsLandscape( curDeviceOrientation ) ) {
+        croppedImage = [self rotateUIImage:croppedImage clockwise:(curDeviceOrientation == UIDeviceOrientationLandscapeRight)];
+      }
     TiBlob *imageBlob = [[TiBlob alloc] initWithImage:[self flipImage:croppedImage]]; // maybe try image here
     NSDictionary *event = [NSDictionary dictionaryWithObjectsAndKeys:
                           self.camera, @"camera",
                           imageBlob, @"media",
                           nil];
-
     // HURRAH!
     [self.proxy fireEvent:@"success" withObject:event];
 
@@ -273,6 +286,7 @@ static const NSString *AVCaptureStillImageIsCapturingStillImageContext = @"AVCap
 
 -(void)pause:(id)args
 {
+    return;
     if(self.captureSession){
         if([self.captureSession isRunning]){
             [self.captureSession stopRunning];
@@ -293,6 +307,7 @@ static const NSString *AVCaptureStillImageIsCapturingStillImageContext = @"AVCap
 
 -(void)resume:(id)args
 {
+    return;
     if(self.captureSession){
         if(![self.captureSession isRunning]){
             [self.captureSession startRunning];
@@ -689,6 +704,11 @@ static const NSString *AVCaptureStillImageIsCapturingStillImageContext = @"AVCap
     return _forceHorizontal;
 }
 
+- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
+    
+    return YES;
+}
+
 // utility routing used during image capture to set up capture orientation
 - (AVCaptureVideoOrientation)avOrientationForDeviceOrientation:(UIDeviceOrientation)deviceOrientation
 {
@@ -699,6 +719,17 @@ static const NSString *AVCaptureStillImageIsCapturingStillImageContext = @"AVCap
     result = AVCaptureVideoOrientationLandscapeLeft;
   return result;
 };
+
+- (UIImage*)rotateUIImage:(UIImage*)sourceImage clockwise:(BOOL)clockwise
+{
+    CGSize size = sourceImage.size;
+    UIGraphicsBeginImageContext(CGSizeMake(size.height, size.width));
+    [[UIImage imageWithCGImage:[sourceImage CGImage] scale:1.0 orientation:clockwise ? UIImageOrientationRight : UIImageOrientationLeft] drawInRect:CGRectMake(0,0,size.height ,size.width)];
+    UIImage* newImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return newImage;
+}
 
 #pragma mark AVCaptureMetadataOutputObjectsDelegate
 
