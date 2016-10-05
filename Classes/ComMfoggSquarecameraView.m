@@ -11,6 +11,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <ImageIO/ImageIO.h>
 #import <CoreMedia/CoreMedia.h>
+#import <CoreImage/CoreImage.h>
 
 
 @implementation ComMfoggSquarecameraView
@@ -223,10 +224,19 @@ static const NSString *AVCaptureStillImageIsCapturingStillImageContext = @"AVCap
 
 -(UIImage *)flipImage:(UIImage *)img
 {
-  UIImage* flippedImage = img;
 
-  if([self.camera isEqualToString: @"front"]){
-    flippedImage = [UIImage imageWithCGImage:img.CGImage scale:img.scale orientation:(img.imageOrientation + 4) % 8];
+    UIImage* flippedImage = img;
+
+    if([self.camera isEqualToString: @"front"]){
+
+        UIGraphicsBeginImageContext(img.size);
+        CGContextRef current_context = UIGraphicsGetCurrentContext();
+        CGContextTranslateCTM(current_context, img.size.width, 0);
+        CGContextScaleCTM(current_context, -1.0, 1.0);
+        [img drawInRect:CGRectMake(0, 0, img.size.width, img.size.height)];
+        UIImage *flipped_img = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        flippedImage = flipped_img;
   };
 
   return flippedImage;
